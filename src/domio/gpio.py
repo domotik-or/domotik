@@ -61,6 +61,7 @@ async def init():
             kwargs["edge_detection"] = gpio.edge_detection
         if gpio.output_value is not None:
             kwargs["output_value"] = gpio.output_value
+        # TODO bias
 
         line_config = {gpio.gpio_num: gpiod.LineSettings(**kwargs)}
 
@@ -161,11 +162,11 @@ async def _ups_task():
             if _ac220 != ac220_old:
                 if _ac220:
                     logger.info("220V power supply is on")
-                    set_value(config.gpio.buzzer.gpio_num, False)
+                    set_value(config.gpios.buzzer.gpio_num, False)
                     await _mqtt_publish("home/mains/presence", "1")
                 else:
                     logger.info("220V power supply is off")
-                    set_value(config.gpio.buzzer.gpio_num, True)
+                    set_value(config.gpios.buzzer.gpio_num, True)
                     await _mqtt_publish("home/mains/presence", "0")
 
             ac220_old = _ac220
@@ -173,7 +174,7 @@ async def _ups_task():
             if _ac220:
                 _last_on = datetime.now()
             else:
-                if datetime.now() - _last_on > timedelta(minutes=4):
+                if datetime.now() - _last_on > timedelta(minutes=5):
                     # shutdown after 5 minutes after lacking 220 V power
                     logger.debug("shutdown requested")
                     await asyncio.create_subprocess_shell(
